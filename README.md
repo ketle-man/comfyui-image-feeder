@@ -1,81 +1,83 @@
 # ComfyUI Image Feeder
 
-指定したフォルダ内の画像をループして読み込むためのComfyUIカスタムノードです。画像ライブラリ機能による視覚的な選択や、ノード上での再生制御が可能です。
+A ComfyUI custom node for looping through images in a folder with a visual library UI and playback controls.
 
-## スクリーンショット
+**Language / 言語 / 语言:** [日本語](README_ja.md) | [中文](README_zh.md)
 
-### ノード外観
+## Screenshots
+
+### Node
 
 ![Image Feeder Node](docs/screenshot_node.png)
 
-### 画像ライブラリ
+### Image Library
 
 ![Image Library](docs/screenshot_library.png)
 
-## 主な機能
+## Features
 
-- **画像ライブラリ (Lib)**:
-  - 📂 **Lib** ボタンからライブラリを開き、フォルダ内の画像をプレビューしながらループ対象をチェックボックスで個別に選択できます。
-  - 3ペインUI（フォルダツリー、画像グリッド、詳細情報）で効率的に画像を管理できます。
-  - プリセット機能でフォルダと選択状態を保存・再利用できます。
+- **Image Library (Lib)**:
+  - Open the library via the 📂 **Lib** button to preview images and select loop targets individually using checkboxes.
+  - 3-pane UI (folder tree / image grid / file info) for efficient image management. Sub-folders are supported.
+  - Preset support to save and reload folder + selection state.
 
-- **再生制御**:
-  - ▶ **Run**: インデックスをリセットして自動ループ実行を開始します。
-  - ⏹ **Stop**: 自動ループ実行を停止します。
-  - 🔗 **Sel ON/OFF**: ライブラリで選択した画像のみを使用するか、フォルダ内の全画像を使用するかをワンクリックで切り替えられます。
+- **Playback Controls**:
+  - ▶ **Run**: Resets the index and starts the automatic loop.
+  - ⏹ **Stop**: Stops the automatic loop.
+  - 🔗 **Sel ON/OFF**: Toggles between using only library-selected images or all images in the folder.
 
-- **柔軟なソートと範囲指定**:
-  - `ascending` / `descending` / `random` のソートモードを搭載。
-  - `start_index` / `end_index` による範囲指定が可能。
+- **Flexible Sorting & Range**:
+  - Sort modes: `ascending` / `descending` / `random`.
+  - Range control via `start_index` / `end_index`.
 
-- **バッチ処理と自動リサイズ**:
-  - `batch_size` に応じた画像の一括出力。
-  - 解像度が異なる画像が混在する場合、自動的に最初の画像のサイズに合わせてリサイズされます。
+- **Batch Output & Auto-Resize**:
+  - Outputs multiple images at once according to `batch_size`.
+  - Automatically resizes images to match the first image's resolution when sizes differ.
 
-- **多言語対応 (i18n)**:
-  - ブラウザの言語設定に応じて UI が自動的に切り替わります。
-  - 対応言語: **English** / **日本語** / **中文（简体）**
+- **i18n Support**:
+  - UI language is automatically detected from the browser's language setting.
+  - Supported: **English** / **日本語** / **中文（简体）**
 
-## インストール方法
+## Installation
 
-1. ComfyUIの `custom_nodes` フォルダにこのフォルダ（`comfyui-image-feeder`）をコピーまたはクローンしてください。
-2. ComfyUIを起動（または再起動）すると、`image` カテゴリに `Image Feeder` が追加されます。
+1. Clone or copy this folder into ComfyUI's `custom_nodes` directory.
+2. Start (or restart) ComfyUI. The `Image Feeder` node will appear under the `image` category.
 
-## 画像の配置場所
+## Image Placement
 
-読み込む画像は必ず以下のディレクトリ構造で配置してください。
+Place images in the following directory structure:
 
 ```
 ComfyUI/
 └── user/
     └── default/
-        └── image-loop-data/        ← ここがルートになります
-            ├── pose_collection/    ← サブフォルダも使用可能
+        └── image-loop-data/        ← root folder
+            ├── pose_collection/    ← subfolders supported
             │   ├── img001.png
             │   └── img002.png
             └── sample.png
 ```
 
-- ノードの `directory` 欄には、`image-loop-data` からの相対パスを入力します。
-- 空欄の場合は `image-loop-data` 直下の画像を参照します。
-- **セキュリティ**: パストラバーサル対策のため、`image-loop-data` フォルダ外へのアクセスは制限されています。
+- Enter the relative path from `image-loop-data` in the node's `directory` field.
+- Leave blank to use the root of `image-loop-data`.
+- **Security**: Access outside the `image-loop-data` folder is blocked to prevent path traversal.
 
-## パラメータ詳細
+## Parameters
 
-| パラメータ | 説明 |
+| Parameter | Description |
 |---|---|
-| `directory` | `image-loop-data` 配下のサブフォルダ名。空欄でルート参照。 |
-| `sort_mode` | `ascending`（自然順昇順）/ `descending`（降順）/ `random`（ランダム） |
-| `index` | 現在の読み込み位置。自動ループ中は自動更新されます。 |
-| `start_index` | 読み込み範囲の開始インデックス。 |
-| `end_index` | 読み込み範囲の終了インデックス（0 で末尾まで）。 |
-| `batch_size` | 一度に出力する画像枚数。 |
-| `seed` | ランダムソート時の再現性に使用します。 |
-| `use_selection` | ライブラリでの選択を有効にするかどうか（ノード上のボタンで切替可能）。 |
+| `directory` | Subfolder name under `image-loop-data`. Leave blank for root. |
+| `sort_mode` | `ascending` (natural order) / `descending` / `random` |
+| `index` | Current load position. Updated automatically during loop. |
+| `start_index` | Start of the load range. |
+| `end_index` | End of the load range (0 = until last). |
+| `batch_size` | Number of images to output at once. |
+| `seed` | Seed for reproducible random sorting. |
+| `use_selection` | Whether to use library selection (toggle via node button). |
 
-## 注意事項
+## Notes
 
-- ファイル名の数値（例: `img1.png`, `img10.png`）を正しく認識してソートします（自然順ソート）。
-- シンボリックリンクは安全のため読み込み対象から除外されます。
-- ライブラリで画像を選択した後は、必ず「ノードに適用 / Apply to Node」ボタンを押して反映させてください。
-- サポートフォーマット: `.png` / `.jpg` / `.jpeg` / `.webp` / `.bmp` / `.tif` / `.tiff`
+- Filenames with numbers (e.g. `img1.png`, `img10.png`) are sorted correctly using natural sort.
+- Symbolic links are excluded for security.
+- After selecting images in the library, press **Apply to Node** to apply the selection.
+- Supported formats: `.png` / `.jpg` / `.jpeg` / `.webp` / `.bmp` / `.tif` / `.tiff`
