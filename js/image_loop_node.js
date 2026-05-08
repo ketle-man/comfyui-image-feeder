@@ -143,14 +143,32 @@ app.registerExtension({
 			const running = state?.running ?? false;
 
 			if (has_next && running) {
-				setTimeout(() => {
-					app.queuePrompt(0, 1);
+				const capturedNodeId = String(node.id);
+				setTimeout(async () => {
+					// Stop が押された場合はキューに追加しない
+					const currentState = _nodeStates.get(capturedNodeId);
+					if (!currentState?.running) return;
+					try {
+						await app.queuePrompt(0, 1);
+					} catch (e) {
+						console.error("[ImageFeeder] queuePrompt failed:", e);
+						if (currentState?.setRunning) currentState.setRunning(false);
+					}
 				}, 500);
 			} else {
 				indexWidget.value = 0;
 				if (state?.setRunning) state.setRunning(false);
 			}
 		});
+
+		// ComfyUI がワークフローをキャンセル・エラー終了した際に running フラグをリセット
+		const stopAll = () => {
+			_nodeStates.forEach((state) => {
+				if (state.running && state.setRunning) state.setRunning(false);
+			});
+		};
+		api.addEventListener("execution_error",       stopAll);
+		api.addEventListener("execution_interrupted", stopAll);
 	}
 });
 
@@ -164,6 +182,6 @@ function makeBtn(label, bg, title = "") {
 		"border-radius:4px;cursor:pointer;font-size:10px;font-weight:bold;" +
 		"transition:all 0.15s;white-space:nowrap;box-shadow: 0 1px 2px rgba(0,0,0,0.3);";
 	btn.addEventListener("mouseover", () => { if (!btn.disabled) btn.style.opacity = "0.8"; });
-	btn.addEventListener("mouseout",  () => { btn.style.opacity = "1"; });
+	btn.addEventListener("mouseout",  () => { if (!btn.disabled) btn.style.opacity = "1"; });
 	return btn;
 }
