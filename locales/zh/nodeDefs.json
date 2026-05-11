@@ -1,0 +1,9 @@
+{
+    "ImageFeeder": {
+        "inputs": {
+            "directory": {
+                "tooltip": "image-loop-data 文件夹中的子文件夹名称。留空则使用根目录。"
+            }
+        }
+    }
+}

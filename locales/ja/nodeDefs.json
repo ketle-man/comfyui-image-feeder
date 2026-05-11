@@ -1,0 +1,9 @@
+{
+    "ImageFeeder": {
+        "inputs": {
+            "directory": {
+                "tooltip": "image-loop-data フォルダ内のサブフォルダ名。空欄の場合はルートを使用します。"
+            }
+        }
+    }
+}

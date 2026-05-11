@@ -229,7 +229,7 @@ class ImageFeeder:
             "required": {
                 "directory": ("STRING", {
                     "default": "",
-                    "tooltip": "image-loop-data フォルダ内のサブフォルダ名。空欄の場合はルートを使用します。"
+                    "tooltip": "Subfolder name within the image-loop-data folder. Leave empty to use the root directory."
                 }),
                 "sort_mode": (["ascending", "descending", "random"],),
                 "index": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
