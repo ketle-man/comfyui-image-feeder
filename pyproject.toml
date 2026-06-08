@@ -9,4 +9,4 @@ Repository = "https://github.com/ketle-man/comfyui-image-feeder"
 [tool.comfy]
 PublisherId = "statsu"
 DisplayName = "ComfyUI Image Feeder"
-Icon = ""
+Icon = "docs/thumb.png"
