@@ -1,7 +1,7 @@
 [project]
 name = "comfyui-image-feeder"
 description = "A ComfyUI custom node for looping through images in a folder with a visual library UI and playback controls."
-version = "0.1.5"
+version = "0.1.6"
 
 [project.urls]
 Repository = "https://github.com/ketle-man/comfyui-image-feeder"
@@ -9,4 +9,4 @@ Repository = "https://github.com/ketle-man/comfyui-image-feeder"
 [tool.comfy]
 PublisherId = "statsu"
 DisplayName = "ComfyUI Image Feeder"
-Icon = "docs/thumb.png"
+Icon = "https://raw.githubusercontent.com/ketle-man/comfyui-image-feeder/master/docs/thumb.png"
