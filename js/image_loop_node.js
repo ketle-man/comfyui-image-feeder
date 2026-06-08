@@ -92,7 +92,9 @@ app.registerExtension({
 						`/image_loop/thumbnail?path=${encodeURIComponent(lastPath)}&_t=${Date.now()}`;
 				}
 				updatePrevBtn(on);
-				node.setSize(node.computeSize());
+				const sz = node.computeSize();
+				sz[0] = Math.max(sz[0], node.size?.[0] ?? 277);
+				node.setSize(sz);
 				node.setDirtyCanvas(true, true);
 			}
 			setPreview(false);
