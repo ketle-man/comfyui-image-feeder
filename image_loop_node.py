@@ -85,7 +85,9 @@ def _setup_routes():
             base = get_allowed_base()
             os.makedirs(base, exist_ok=True)
 
-            def _scan(path, rel=""):
+            def _scan(path, rel="", depth=0):
+                if depth > 20:
+                    return []
                 items = []
                 try:
                     for entry in sorted(os.scandir(path), key=lambda e: e.name.lower()):
@@ -94,7 +96,7 @@ def _setup_routes():
                             items.append({
                                 "name": entry.name,
                                 "path": rel_path,
-                                "children": _scan(entry.path, rel_path),
+                                "children": _scan(entry.path, rel_path, depth + 1),
                             })
                 except PermissionError:
                     pass
@@ -294,8 +296,7 @@ class ImageFeeder:
         if sort_mode == "descending":
             files.reverse()
         elif sort_mode == "random":
-            random.seed(seed)
-            random.shuffle(files)
+            random.Random(seed).shuffle(files)
 
         # 範囲指定の適用
         if end_index == 0 or end_index >= len(files):
@@ -318,7 +319,7 @@ class ImageFeeder:
             return torch.from_numpy(img)[None,]
 
         for i in range(batch_size):
-            actual_index = (index + i) % total_in_range
+            actual_index = min(index + i, total_in_range - 1)
             file_to_load = files[actual_index]
             _debug(f"Loading: {file_to_load} (index={actual_index})")
             img_tensor = load_single_image(file_to_load)

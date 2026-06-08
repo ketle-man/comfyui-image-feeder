@@ -12,6 +12,9 @@ function debugLog(...args) {
 
 // ノードごとの実行状態 Map<nodeId(string), { running: boolean, setRunning: fn }>
 const _nodeStates = new Map();
+// ノードごとの遅延タイマー ID Map<nodeId(string), timerId>
+const _nodeTimers = new Map();
+let _setupDone = false;
 
 app.registerExtension({
 	name: "Antigravity.ImageFeeder",
@@ -60,11 +63,16 @@ app.registerExtension({
 			setRunning(false);
 
 			// ---- ボタン動作 ----
-			runBtn.onclick = () => {
+			runBtn.onclick = async () => {
 				const idxW = node.widgets?.find(w => w.name === "index");
 				if (idxW) idxW.value = 0;
 				setRunning(true);
-				app.queuePrompt(0, 1);
+				try {
+					await app.queuePrompt(0, 1);
+				} catch (e) {
+					console.error("[ImageFeeder] queuePrompt failed:", e);
+					setRunning(false);
+				}
 			};
 
 			stopBtn.onclick = () => setRunning(false);
@@ -116,7 +124,10 @@ app.registerExtension({
 			};
 
 			node.onRemoved = function () {
-				_nodeStates.delete(String(node.id));
+				const id = String(node.id);
+				clearTimeout(_nodeTimers.get(id));
+				_nodeTimers.delete(id);
+				_nodeStates.delete(id);
 			};
 
 			return ret;
@@ -125,26 +136,27 @@ app.registerExtension({
 
 	// ---- グローバル同期イベント ----
 	async setup() {
+		if (_setupDone) return;
+		_setupDone = true;
+
 		api.addEventListener("image_loop_node_sync", ({ detail }) => {
 			const { node_id, next_index, has_next } = detail;
-			let node = null;
-			if (node_id != null) node = app.graph.getNodeById(Number(node_id));
-			if (!node) {
-				const nodes = app.graph._nodes.filter(n => n.comfyClass === "ImageFeeder");
-				if (nodes.length > 0) node = nodes[0];
-			}
+			if (node_id == null) return;
+			const node = app.graph.getNodeById(Number(node_id));
 			if (!node) return;
 
 			const indexWidget = node.widgets?.find(w => w.name === "index");
 			if (!indexWidget) return;
 
-			indexWidget.value = next_index;
 			const state   = _nodeStates.get(String(node.id));
 			const running = state?.running ?? false;
 
 			if (has_next && running) {
+				indexWidget.value = next_index;
 				const capturedNodeId = String(node.id);
-				setTimeout(async () => {
+				clearTimeout(_nodeTimers.get(capturedNodeId));
+				const timerId = setTimeout(async () => {
+					_nodeTimers.delete(capturedNodeId);
 					// Stop が押された場合はキューに追加しない
 					const currentState = _nodeStates.get(capturedNodeId);
 					if (!currentState?.running) return;
@@ -155,6 +167,7 @@ app.registerExtension({
 						if (currentState?.setRunning) currentState.setRunning(false);
 					}
 				}, 500);
+				_nodeTimers.set(capturedNodeId, timerId);
 			} else {
 				indexWidget.value = 0;
 				if (state?.setRunning) state.setRunning(false);
@@ -163,7 +176,7 @@ app.registerExtension({
 
 		// ComfyUI がワークフローをキャンセル・エラー終了した際に running フラグをリセット
 		const stopAll = () => {
-			_nodeStates.forEach((state) => {
+			Array.from(_nodeStates.values()).forEach((state) => {
 				if (state.running && state.setRunning) state.setRunning(false);
 			});
 		};

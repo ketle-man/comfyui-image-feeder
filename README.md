@@ -32,6 +32,7 @@ A ComfyUI custom node for looping through images in a folder with a visual libra
 
 - **Batch Output & Auto-Resize**:
   - Outputs multiple images at once according to `batch_size`.
+  - If the final batch has fewer remaining images than `batch_size`, the last image is repeated to fill the batch (no wrap-around to the start).
   - Automatically resizes images to match the first image's resolution when sizes differ.
 
 - **i18n Support**:
@@ -81,3 +82,5 @@ ComfyUI/
 - Symbolic links are excluded for security.
 - After selecting images in the library, press **Apply to Node** to apply the selection.
 - Supported formats: `.png` / `.jpg` / `.jpeg` / `.webp` / `.bmp` / `.tif` / `.tiff`
+- Multiple Image Feeder nodes can run independently in the same workflow.
+- If a queue error occurs during the loop, the Run button is automatically re-enabled.
