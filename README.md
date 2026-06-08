@@ -25,6 +25,7 @@ A ComfyUI custom node for looping through images in a folder with a visual libra
   - ▶ **Run**: Resets the index and starts the automatic loop.
   - ⏹ **Stop**: Stops the automatic loop.
   - 🔗 **Sel ON/OFF**: Toggles between using only library-selected images or all images in the folder.
+  - 👁 **Prev ON/OFF**: Toggles the image preview panel below the buttons. The preview updates automatically with each execution.
 
 - **Flexible Sorting & Range**:
   - Sort modes: `ascending` / `descending` / `random`.
@@ -48,7 +49,7 @@ A ComfyUI custom node for looping through images in a folder with a visual libra
 
 Place images in the following directory structure:
 
-```
+```text
 ComfyUI/
 └── user/
     └── default/
@@ -66,7 +67,7 @@ ComfyUI/
 ## Parameters
 
 | Parameter | Description |
-|---|---|
+| --- | --- |
 | `directory` | Subfolder name under `image-loop-data`. Leave blank for root. |
 | `sort_mode` | `ascending` (natural order) / `descending` / `random` |
 | `index` | Current load position. Updated automatically during loop. |

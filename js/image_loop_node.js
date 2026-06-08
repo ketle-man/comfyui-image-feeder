@@ -14,6 +14,8 @@ function debugLog(...args) {
 const _nodeStates = new Map();
 // ノードごとの遅延タイマー ID Map<nodeId(string), timerId>
 const _nodeTimers = new Map();
+// ノードごとのプレビュー状態 Map<nodeId(string), { on, img, lastPath }>
+const _nodePreviewStates = new Map();
 let _setupDone = false;
 
 app.registerExtension({
@@ -35,10 +37,11 @@ app.registerExtension({
 				"padding:5px;margin-top:5px;box-sizing:border-box;width:100%;";
 
 			// ---- ボタン生成 ----
-			const runBtn  = makeBtn(t("node.run"),    "#2a7a3a", t("node.run_title"));
-			const stopBtn = makeBtn(t("node.stop"),   "#7a2a2a", t("node.stop_title"));
-			const libBtn  = makeBtn(t("node.lib"),    "#3a3a8a", t("node.lib_title"));
-			const selBtn  = makeBtn(t("node.sel_on"), "#4a708b", t("node.sel_title"));
+			const runBtn  = makeBtn(t("node.run"),      "#2a7a3a", t("node.run_title"));
+			const stopBtn = makeBtn(t("node.stop"),     "#7a2a2a", t("node.stop_title"));
+			const libBtn  = makeBtn(t("node.lib"),      "#3a3a8a", t("node.lib_title"));
+			const selBtn  = makeBtn(t("node.sel_on"),   "#4a708b", t("node.sel_title"));
+			const prevBtn = makeBtn(t("node.prev_off"), "#3a4a5a", t("node.prev_title"));
 
 			// 停止状態で初期化
 			stopBtn.disabled = true;
@@ -58,6 +61,41 @@ app.registerExtension({
 				selBtn.style.background = val ? "#4a708b" : "#444";
 				selBtn.style.color = val ? "#fff" : "#aaa";
 			}
+
+			// ---- プレビューパネル ----
+			const PREVIEW_H = 204;
+			const previewPanel = document.createElement("div");
+			previewPanel.style.cssText =
+				`width:100%;height:${PREVIEW_H}px;padding:4px 5px 0;` +
+				"box-sizing:border-box;display:none;";
+			const previewImg = document.createElement("img");
+			previewImg.alt = "";
+			previewImg.style.cssText =
+				"width:100%;height:100%;object-fit:contain;border-radius:4px;" +
+				"background:#0d0d0d;display:block;visibility:hidden;";
+			previewPanel.append(previewImg);
+
+			let previewOn = false;
+			function updatePrevBtn(on) {
+				prevBtn.textContent = on ? t("node.prev_on") : t("node.prev_off");
+				prevBtn.style.background = on ? "#5a6a8a" : "#3a4a5a";
+			}
+			function setPreview(on) {
+				previewOn = on;
+				const existing = _nodePreviewStates.get(String(node.id));
+				const lastPath = existing?.lastPath ?? null;
+				_nodePreviewStates.set(String(node.id), { on, img: previewImg, lastPath });
+				previewPanel.style.display = on ? "block" : "none";
+				if (on && lastPath) {
+					previewImg.style.visibility = "visible";
+					previewImg.src =
+						`/image_loop/thumbnail?path=${encodeURIComponent(lastPath)}&_t=${Date.now()}`;
+				}
+				updatePrevBtn(on);
+				node.setSize(node.computeSize());
+				node.setDirtyCanvas(true, true);
+			}
+			setPreview(false);
 
 			// 初期登録
 			setRunning(false);
@@ -86,14 +124,20 @@ app.registerExtension({
 					node.setDirtyCanvas(true, true);
 				}
 			};
+			prevBtn.onclick = () => setPreview(!previewOn);
 
-			container.append(runBtn, stopBtn, libBtn, selBtn);
+			container.append(runBtn, stopBtn, libBtn, selBtn, prevBtn);
+
+			// ---- 外側ラッパー（ボタン行 + プレビューパネル）----
+			const outerWrapper = document.createElement("div");
+			outerWrapper.style.cssText = "width:100%;";
+			outerWrapper.append(container, previewPanel);
 
 			// ---- DOM ウィジェット登録 ----
 			const domWidget = node.addDOMWidget(
 				"image_loop_controls",
 				"image_loop_controls",
-				container,
+				outerWrapper,
 				{ getValue() { return ""; }, setValue() {} }
 			);
 
@@ -113,14 +157,17 @@ app.registerExtension({
 				hideWidget("selected_files");
 				const useW = hideWidget("use_selection");
 				if (useW) updateSelBtn(useW.value);
-				
-				// ノードのサイズを再計算させて、隠したウィジェットのスペースを詰める
-				node.setSize(node.computeSize());
+
+				// ボタンが収まる最小幅を保証
+				node.min_size = [277, 50];
+				const sz = node.computeSize();
+				sz[0] = Math.max(sz[0], 277);
+				node.setSize(sz);
 				node.setDirtyCanvas(true, true);
 			}, 20);
 			
 			domWidget.computeSize = function(width) {
-				return [width, 46];
+				return [width, previewOn ? 46 + PREVIEW_H : 46];
 			};
 
 			node.onRemoved = function () {
@@ -128,6 +175,7 @@ app.registerExtension({
 				clearTimeout(_nodeTimers.get(id));
 				_nodeTimers.delete(id);
 				_nodeStates.delete(id);
+				_nodePreviewStates.delete(id);
 			};
 
 			return ret;
@@ -140,13 +188,26 @@ app.registerExtension({
 		_setupDone = true;
 
 		api.addEventListener("image_loop_node_sync", ({ detail }) => {
-			const { node_id, next_index, has_next } = detail;
+			const { node_id, next_index, has_next, thumbnail_path } = detail;
 			if (node_id == null) return;
 			const node = app.graph.getNodeById(Number(node_id));
 			if (!node) return;
 
 			const indexWidget = node.widgets?.find(w => w.name === "index");
 			if (!indexWidget) return;
+
+			// プレビュー更新
+			if (thumbnail_path) {
+				const ps = _nodePreviewStates.get(String(node.id));
+				if (ps) {
+					ps.lastPath = thumbnail_path;
+					if (ps.on) {
+						ps.img.style.visibility = "visible";
+						ps.img.src =
+							`/image_loop/thumbnail?path=${encodeURIComponent(thumbnail_path)}&_t=${Date.now()}`;
+					}
+				}
+			}
 
 			const state   = _nodeStates.get(String(node.id));
 			const running = state?.running ?? false;

@@ -328,10 +328,14 @@ class ImageFeeder:
         next_index = index + batch_size
         has_next = next_index < total_in_range
 
+        current_file = files[min(index, total_in_range - 1)]
+        thumbnail_path = (directory.rstrip("/\\") + "/" + current_file) if directory else current_file
+
         PromptServer.instance.send_sync("image_loop_node_sync", {
             "node_id": unique_id,
             "next_index": next_index if has_next else 0,
             "has_next": has_next,
+            "thumbnail_path": thumbnail_path,
         })
 
         first_img = output_images[0]
